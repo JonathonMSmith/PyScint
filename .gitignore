@@ -1,5 +1,6 @@
 # Chain info
 *.cred
+*.Z
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

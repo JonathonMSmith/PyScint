@@ -1,6 +1,7 @@
 """
 Loads data from the Chain network
 """
+import georinex
 
 platform = 'chain'
 name = 'gps'

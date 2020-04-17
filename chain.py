@@ -82,10 +82,11 @@ def download(date_array, tag, data_path=None, user=None, password=None):
         yrdoystr = ''.join(yr, '.', doy)
         #try download
         try:
-            dwnld = ''.join('ftp://chain.physics.unb.ca/gps/data/', tag,
+            #ftplib uses a hostname not a url, so the 'ftp://' is not here
+            dwnld = ''.join('chain.physics.unb.ca/gps/data/', tag,
                             '/{year:04d}/{doy:03d}/'.format(year=yr, doy=doy),
                             yr[-2:], '/')
             top_dir = os.path.join(data_path, 'chain')
             ftp = ftplib.FTP(dwnld, user, password)
-            ftp.login()                                                       
+            ftp.login()
     return

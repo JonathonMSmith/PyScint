@@ -11,6 +11,8 @@ GISTM data is collected at 50Hz.
 import georinex
 import logging
 import datetime
+import os
+import sys
 logger = logging.getLogger(__name__)
 
 platform = 'chain'
@@ -45,9 +47,9 @@ def list_files(tag=None, sat_id=None, data_path=None, format_str=None):
 
     return file_list
 
-
 def load():
     return
+
 
 def download(date_array, tag, data_path=None, user=None, password=None):
     """Download Chain Data
@@ -74,19 +76,45 @@ def download(date_array, tag, data_path=None, user=None, password=None):
     if (user is None) or (password is None):
         raise ValueError('CHAIN user account information must be provided.')
 
+    top_dir = os.path.join(data_path, 'chain')
+    print(top_dir)
+
     for date in date_array:
         logger.info('Downloading COSMIC data for ' + date.strftime('%D'))
         sys.stdout.flush()
-        yr = date.strftime(%Y)
-        doy = date.strftime(%j)
-        yrdoystr = ''.join(yr, '.', doy)
+        yr = date.strftime('%Y')
+        doy = date.strftime('%j')
+        yrdoystr = ''.join((yr, '.', doy))
         #try download
         try:
             #ftplib uses a hostname not a url, so the 'ftp://' is not here
-            dwnld = ''.join('chain.physics.unb.ca/gps/data/', tag,
-                            '/{year:04d}/{doy:03d}/'.format(year=yr, doy=doy),
-                            yr[-2:], '/')
-            top_dir = os.path.join(data_path, 'chain')
-            ftp = ftplib.FTP(dwnld, user, password)
-            ftp.login()
+            hostname = ''.join(('chain.physics.unb.ca'))
+            ftp = ftplib.FTP(hostname)
+            ftp.login(user, password)
+            ftp_dir = ''.join(('/gps/data/', tag, '/', yr, '/', doy, '/',
+                         #'/{year:04d}/{doy:03d}/'.format(year=yr, doy=doy),
+                               yr[-2:], 'o/'))
+            print(ftp_dir)
+            ftp.cwd(ftp_dir)
+
+            files = []
+            ftp.retrlines('LIST', files.append)
+            files = [file.split(None)[-1] for file in files]
+
+            for file in files:
+                save_dir = os.path.join(top_dir, ftp_dir)
+                print(save_dir)
+                if not os.path.exists(save_dir):
+                    os.makedirs(save_dir)
+                save_file = os.path.join(save_dir, file)
+                print(save_file)
+                with open(save_file, 'wb') as f:
+                    print('Downloading: ' + file)
+                    ftp.retrbinary("RETR " + file, f.write)
+        except ftplib.error_perm as err:
+             estr = ''.join((str(err)))
+             print(estr)
+             logger.info(estr)
+
+    ftp.close()
     return

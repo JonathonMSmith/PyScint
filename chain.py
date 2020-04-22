@@ -8,7 +8,7 @@ Ionospheric Scintillation and TECM Monitor (GISTM). GNSS data is collected at
 1Hz, while GISTM data is collected at 50Hz.
 
 """
-import georinex
+import georinex as gr
 import logging
 import datetime
 import os
@@ -18,6 +18,15 @@ logger = logging.getLogger(__name__)
 platform = 'chain'
 name = 'gps'
 tags = ['daily', 'highrate', 'hourly', 'local', 'nvd', 'raw', 'sbf']
+sat_ids = {'arc': 'arctic_bay', 'arv': 'arviat', 'cbb': 'cambridge_bay',
+           'chu': 'churchill', 'cor': 'coral_harbour', 'edm': 'edmonton',
+           'eur': 'eureka', 'mcm': 'fort_mcmurray', 'fsi': 'fort_simpson',
+           'fsm': 'fort_smith', 'gil': 'gillam', 'gjo': 'gjoa_haven',
+           'gri': 'grise_fiord', 'hal': 'hall_beach', 'iqa': 'iqaluit',
+           'kug': 'kugliktuk', 'pon': 'pond_inlet', 'qik': 'qikiqtarjuaq',
+           'rab': 'rabbit_lake', 'ran': 'rankin_inlet', 'rep': 'repulse_bay',
+           'res': 'resolute', 'sac': 'sachs_harbour', 'san': 'sanikiluaq',
+           'tal': 'taloyoak'}
 
 
 # currently using sat_id convention, although this is not a satellite.
@@ -49,7 +58,9 @@ def list_files(tag=None, sat_id=None, data_path=None, format_str=None):
     return file_list
 
 
-def load():
+def load(fnames, tag=None, sat_id=None):
+    """Load CHAIN GPS Files
+    """
     return
 
 
@@ -72,8 +83,8 @@ def download(date_array, tag, data_path=None, user=None, password=None,
         daily, highrate, hourly, local, nvd, raw, sbf
 
     compression_type : string
-        o -
-        d -
+        o - observation .Z UNIX compression
+        d - Hatanaka AND UNIX compression
     """
     import ftplib
 
@@ -90,7 +101,7 @@ def download(date_array, tag, data_path=None, user=None, password=None,
         sys.stdout.flush()
         yr = date.strftime('%Y')
         doy = date.strftime('%j')
-        yrdoystr = ''.join((yr, '.', doy))
+#        yrdoystr = ''.join((yr, '.', doy))
         # try download
         try:
             # ftplib uses a hostname not a url, so the 'ftp://' is not here

@@ -3,9 +3,9 @@ Loads data from the Chain network
 
 CHAIN has 25 GNSS Ionospheric Scintillation and TEC Monitors (GISTM) located
 throughout the Canadian Arctic. Each GISTM operates as a dual-band
-Global Navigation Satellite System (GNSS) receiver as well as a GNSS Ionospheric
-Scintillation and TECM Monitor (GISTM). GNSS data is collected at 1Hz, while
-GISTM data is collected at 50Hz.
+Global Navigation Satellite System (GNSS) receiver as well as a GNSS
+Ionospheric Scintillation and TECM Monitor (GISTM). GNSS data is collected at
+1Hz, while GISTM data is collected at 50Hz.
 
 """
 import georinex
@@ -19,7 +19,8 @@ platform = 'chain'
 name = 'gps'
 tags = ['daily', 'highrate', 'hourly', 'local', 'nvd', 'raw', 'sbf']
 
-#currently using sat_id convention, although this is not a satellite.
+
+# currently using sat_id convention, although this is not a satellite.
 def list_files(tag=None, sat_id=None, data_path=None, format_str=None):
     """Return a Pandas Series of every file for chosen receiver data.
     Parameters
@@ -41,11 +42,12 @@ def list_files(tag=None, sat_id=None, data_path=None, format_str=None):
         A class containing the verified available files
     """
     estr = 'Building a list of CHAIN files, which can possibly take time. '
-    #update this time estimate based on actual results
+    # update this time estimate based on actual results
     print('{:s}~1s per 100K files'.format(estr))
     sys.stdout.flush()
 
     return file_list
+
 
 def load():
     return
@@ -82,7 +84,6 @@ def download(date_array, tag, data_path=None, user=None, password=None,
         raise ValueError('CHAIN user account information must be provided.')
 
     top_dir = os.path.join(data_path, 'chain')
-    print(top_dir)
 
     for date in date_array:
         logger.info('Downloading COSMIC data for ' + date.strftime('%D'))
@@ -90,36 +91,38 @@ def download(date_array, tag, data_path=None, user=None, password=None,
         yr = date.strftime('%Y')
         doy = date.strftime('%j')
         yrdoystr = ''.join((yr, '.', doy))
-        #try download
+        # try download
         try:
-            #ftplib uses a hostname not a url, so the 'ftp://' is not here
+            # ftplib uses a hostname not a url, so the 'ftp://' is not here
+            # connect to ftp server and change to desired directory
             hostname = ''.join(('chain.physics.unb.ca'))
             ftp = ftplib.FTP(hostname)
             ftp.login(user, password)
             ftp_dir = ''.join(('/gps/data/', tag, '/', yr, '/', doy, '/',
-                         #'/{year:04d}/{doy:03d}/'.format(year=yr, doy=doy),
                                yr[-2:], compression_type, '/'))
-            print(ftp_dir)
             ftp.cwd(ftp_dir)
 
+            # setup list of station files to iterate through
             files = []
             ftp.retrlines('LIST', files.append)
             files = [file.split(None)[-1] for file in files]
-
+            # iterate through files and download each one
             for file in files:
                 save_dir = os.path.join(top_dir, ftp_dir[1::])
-                print(save_dir)
+                # make directory if it doesn't already exist
                 if not os.path.exists(save_dir):
                     os.makedirs(save_dir)
+
                 save_file = os.path.join(save_dir, file)
-                print(save_file)
                 with open(save_file, 'wb') as f:
                     print('Downloading: ' + file)
                     ftp.retrbinary("RETR " + file, f.write)
+
         except ftplib.error_perm as err:
-             estr = ''.join((str(err)))
-             print(estr)
-             logger.info(estr)
+            # pass error message through and log it
+            estr = ''.join((str(err)))
+            print(estr)
+            logger.info(estr)
 
     ftp.close()
     return

@@ -1,7 +1,8 @@
 import numpy as np
 import pandas as pd
 
-def simple_s4(snr: array, bin_size: int = 600, step_size: int = 600):
+
+def simple_s4(snr: list = None, bin_size: int = 600, step_size: int = 600):
     """Compute S4 from the signal to noise ratio
        using the equation: s_4 = var_intensity / intensity
        intensity = 10 ** (snr / 10)

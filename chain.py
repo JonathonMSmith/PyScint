@@ -51,7 +51,8 @@ def load():
     return
 
 
-def download(date_array, tag, data_path=None, user=None, password=None):
+def download(date_array, tag, data_path=None, user=None, password=None,
+             compression_type='o'):
     """Download Chain Data
     For tags
     Path format for daily, highrate, hourly, local:
@@ -63,10 +64,14 @@ def download(date_array, tag, data_path=None, user=None, password=None):
 
     Parameters
     ==========
-    date_array : datetime.datetime
+    date_array : list of datetime.datetime
 
     tag : string
         daily, highrate, hourly, local, nvd, raw, sbf
+
+    compression_type : string
+        o -
+        d -
     """
     import ftplib
 
@@ -93,7 +98,7 @@ def download(date_array, tag, data_path=None, user=None, password=None):
             ftp.login(user, password)
             ftp_dir = ''.join(('/gps/data/', tag, '/', yr, '/', doy, '/',
                          #'/{year:04d}/{doy:03d}/'.format(year=yr, doy=doy),
-                               yr[-2:], 'o/'))
+                               yr[-2:], compression_type, '/'))
             print(ftp_dir)
             ftp.cwd(ftp_dir)
 
@@ -102,7 +107,7 @@ def download(date_array, tag, data_path=None, user=None, password=None):
             files = [file.split(None)[-1] for file in files]
 
             for file in files:
-                save_dir = os.path.join(top_dir, ftp_dir)
+                save_dir = os.path.join(top_dir, ftp_dir[1::])
                 print(save_dir)
                 if not os.path.exists(save_dir):
                     os.makedirs(save_dir)

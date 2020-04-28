@@ -13,6 +13,7 @@ import logging
 import datetime
 import os
 import sys
+import pysat
 logger = logging.getLogger(__name__)
 
 platform = 'chain'
@@ -27,6 +28,17 @@ sat_ids = {'arc': 'arctic_bay', 'arv': 'arviat', 'cbb': 'cambridge_bay',
            'rab': 'rabbit_lake', 'ran': 'rankin_inlet', 'rep': 'repulse_bay',
            'res': 'resolute', 'sac': 'sachs_harbour', 'san': 'sanikiluaq',
            'tal': 'taloyoak'}
+
+# signal strength SNR units are receiver dependent. See RINEX-211.pdf
+var_units = {'C1': ('meters', 'pseudorange'), 'P1': ('meters', 'pseudorange'),
+             'C2': ('meters', 'pseudorange'), 'P2': ('meters', 'pseudorange'),
+             'C5': ('meters', 'pseudorange'),
+             'L1': ('full_cycles', 'carrier_phase'),
+             'L2': ('full_cycles', 'carrier_phase'),
+             'L5': ('full_cycles', 'carrier_phase'),
+             'S1': ('SNR', 'signal_strength'),
+             'S2': ('SNR', 'signal_strength'),
+             'S5': ('SNR', 'signal_strength')}
 
 
 # currently using sat_id convention, although this is not a satellite.
@@ -60,8 +72,42 @@ def list_files(tag=None, sat_id=None, data_path=None, format_str=None):
 
 def load(fnames, tag=None, sat_id=None):
     """Load CHAIN GPS Files
+    Parameters
+    ----------
+    fnames : (list or array-like)
+        series of filenames to be loaded
+    tag : (string or NoneType)
+        Denotes type of file to load.
+        (default=None)
+    sat_id : (string or NoneType)
+        Specifies the satellite ID for a constellation.  Not used.
+        (default=None)
     """
-    return
+
+    if not fnames:
+        return pysat.DataFrame(None), pysat.Meta(None)
+    elif len(fnames) > 1:
+
+        meta = pysat.Meta()
+        signal_meta = pysat.Meta()
+
+        # load the rinex
+        data = gr.load(fnames[0])
+        # get the metadata from the xarray.Dataset
+        xr_attrs = data.attrs
+        # format the metadata
+        for at in xr_attrs:
+            meta[at] = {'units': '', 'long_name': at}
+        keys = data.data_vars.keys()
+        for key in keys:
+            # find the xarray equivalents of units and long_name
+            signal_meta[key] = {'units': data.variables[key].units,
+                                'long_name': data.variables[key].long_name}
+        # format the data
+        output = data.variables
+        return output, meta
+    else:
+        raise ValueError('Only one filename currently supported')
 
 
 def download(date_array, tag, data_path=None, user=None, password=None,
@@ -76,7 +122,7 @@ def download(date_array, tag, data_path=None, user=None, password=None,
     Currently only daily is confirmed to work
 
     Parameters
-    ==========
+    ----------
     date_array : list of datetime.datetime
 
     tag : string
@@ -90,8 +136,7 @@ def download(date_array, tag, data_path=None, user=None, password=None,
 
     if tag not in tags:
         raise ValueError('Uknown CHAIN tag')
-
-    if (user is None) or (password is None):
+    elif (user is None) or (password is None):
         raise ValueError('CHAIN user account information must be provided.')
 
     top_dir = os.path.join(data_path, 'chain')
@@ -101,7 +146,7 @@ def download(date_array, tag, data_path=None, user=None, password=None,
         sys.stdout.flush()
         yr = date.strftime('%Y')
         doy = date.strftime('%j')
-#        yrdoystr = ''.join((yr, '.', doy))
+
         # try download
         try:
             # ftplib uses a hostname not a url, so the 'ftp://' is not here
@@ -126,7 +171,8 @@ def download(date_array, tag, data_path=None, user=None, password=None,
 
                 save_file = os.path.join(save_dir, file)
                 with open(save_file, 'wb') as f:
-                    print('Downloading: ' + file)
+                    print('Downloading: ' + file + ', and saving to ' +
+                          save_file)
                     ftp.retrbinary("RETR " + file, f.write)
 
         except ftplib.error_perm as err:
